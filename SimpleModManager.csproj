@@ -22,4 +22,8 @@
     <Resource Include="Fonts\*.ttf" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="SharpCompress" Version="0.49.1" />
+  </ItemGroup>
+
 </Project>

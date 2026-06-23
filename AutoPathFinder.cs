@@ -2,7 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
+using SharpCompress.Archives;
+using SharpCompress.Common;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -43,7 +44,7 @@ namespace SimpleModManager
 
     public static string GetOrCreateLocalModsDirectory()
     {
-      string modsDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".isolumia", "Mods");
+      string modsDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Isolumia", "ModManager", "Mods");
 
       if (!Directory.Exists(modsDir))
       {
@@ -73,23 +74,26 @@ namespace SimpleModManager
         }
       }
 
-      foreach (var zipFile in Directory.GetFiles(modsDir, "*.zip"))
+      var exts = new[] { ".zip", ".rar", ".7z" };
+      var archiveFiles = Directory.GetFiles(modsDir).Where(f => exts.Contains(Path.GetExtension(f).ToLower()));
+
+      foreach (var archiveFile in archiveFiles)
       {
-        string zipName = Path.GetFileNameWithoutExtension(zipFile);
+        string archiveName = Path.GetFileNameWithoutExtension(archiveFile);
 
         try
         {
-          using var archive = ZipFile.OpenRead(zipFile);
+          using var archive = ArchiveFactory.OpenArchive(archiveFile);
 
           bool hasPak = archive.Entries.Any(e =>
-            e.FullName.EndsWith(".pak", StringComparison.OrdinalIgnoreCase));
+            !e.IsDirectory && e.Key.EndsWith(".pak", StringComparison.OrdinalIgnoreCase));
 
           if (hasPak)
           {
             discovered.Add(new PakMods
             {
-              PakName = zipName,
-              LocationPath = zipFile,
+              PakName = archiveName,
+              LocationPath = archiveFile,
               IsActive = false
             });
           }
@@ -129,17 +133,19 @@ namespace SimpleModManager
         }
       }
       else if (File.Exists(mod.LocationPath) &&
-               mod.LocationPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+               (mod.LocationPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ||
+                mod.LocationPath.EndsWith(".rar", StringComparison.OrdinalIgnoreCase) ||
+                mod.LocationPath.EndsWith(".7z", StringComparison.OrdinalIgnoreCase)))
       {
         try
         {
-          using var archive = ZipFile.OpenRead(mod.LocationPath);
+          using var archive = ArchiveFactory.OpenArchive(mod.LocationPath);
 
           foreach (var entry in archive.Entries.Where(e =>
-            e.FullName.EndsWith(".pak", StringComparison.OrdinalIgnoreCase)))
+            !e.IsDirectory && e.Key.EndsWith(".pak", StringComparison.OrdinalIgnoreCase)))
           {
             var match = Regex.Match(
-              Path.GetFileNameWithoutExtension(entry.FullName),
+              Path.GetFileNameWithoutExtension(entry.Key),
               @"pakchunk(\d+)",
               RegexOptions.IgnoreCase);
 
@@ -210,16 +216,18 @@ namespace SimpleModManager
         }
 
         if (File.Exists(mod.LocationPath) &&
-            mod.LocationPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            (mod.LocationPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ||
+             mod.LocationPath.EndsWith(".rar", StringComparison.OrdinalIgnoreCase) ||
+             mod.LocationPath.EndsWith(".7z", StringComparison.OrdinalIgnoreCase)))
         {
-          using var archive = ZipFile.OpenRead(mod.LocationPath);
+          using var archive = ArchiveFactory.OpenArchive(mod.LocationPath);
 
           var pakEntries = archive.Entries
-            .Where(e => e.FullName.EndsWith(".pak", StringComparison.OrdinalIgnoreCase));
+            .Where(e => !e.IsDirectory && e.Key.EndsWith(".pak", StringComparison.OrdinalIgnoreCase));
 
           foreach (var entry in pakEntries)
           {
-            string entryFileName = Path.GetFileName(entry.FullName);
+            string entryFileName = Path.GetFileName(entry.Key);
             string originalBase = Path.GetFileNameWithoutExtension(entryFileName);
 
             var match = Regex.Match(originalBase, @"(pakchunk\d+)", RegexOptions.IgnoreCase);
@@ -230,13 +238,13 @@ namespace SimpleModManager
             {
               string lookupName = originalBase + ext;
               var fileEntry = archive.Entries.FirstOrDefault(e =>
-                Path.GetFileName(e.FullName).Equals(lookupName, StringComparison.OrdinalIgnoreCase));
+                !e.IsDirectory && Path.GetFileName(e.Key).Equals(lookupName, StringComparison.OrdinalIgnoreCase));
 
               string dest = Path.Combine(targetPaksFolder, targetBase + ext);
 
               if (fileEntry != null)
               {
-                fileEntry.ExtractToFile(dest, true);
+                fileEntry.WriteToFile(dest, new ExtractionOptions { Overwrite = true });
               }
               else if (ext == ".sig" && !File.Exists(dest))
               {
@@ -295,16 +303,18 @@ namespace SimpleModManager
         }
 
         if (File.Exists(mod.LocationPath) &&
-            mod.LocationPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            (mod.LocationPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ||
+             mod.LocationPath.EndsWith(".rar", StringComparison.OrdinalIgnoreCase) ||
+             mod.LocationPath.EndsWith(".7z", StringComparison.OrdinalIgnoreCase)))
         {
-          using var archive = ZipFile.OpenRead(mod.LocationPath);
+          using var archive = ArchiveFactory.OpenArchive(mod.LocationPath);
 
           var pakEntries = archive.Entries
-            .Where(e => e.FullName.EndsWith(".pak", StringComparison.OrdinalIgnoreCase));
+            .Where(e => !e.IsDirectory && e.Key.EndsWith(".pak", StringComparison.OrdinalIgnoreCase));
 
           foreach (var entry in pakEntries)
           {
-            string entryFileName = Path.GetFileName(entry.FullName);
+            string entryFileName = Path.GetFileName(entry.Key);
             string originalBase = Path.GetFileNameWithoutExtension(entryFileName);
 
             var match = Regex.Match(originalBase, @"(pakchunk\d+)", RegexOptions.IgnoreCase);

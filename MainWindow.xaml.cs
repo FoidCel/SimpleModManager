@@ -48,8 +48,8 @@ namespace SimpleModManager
     private static readonly HttpClient _httpClient = new();
 
     private readonly string _configFilePath = Path.Combine(
-      Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-      ".isolumia", "modmanager.json");
+      Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+      "Isolumia", "ModManager", "modmanager.json");
 
     private string _tempSelectedPlatform = "";
 
@@ -594,8 +594,21 @@ namespace SimpleModManager
 
           try
           {
-            var fileBytes = await _httpClient.GetByteArrayAsync(mod.download_url);
+            using var fileResponse = await _httpClient.GetAsync(mod.download_url, HttpCompletionOption.ResponseHeadersRead);
+            fileResponse.EnsureSuccessStatusCode();
+
             string fileName = $"{mod.name}.zip";
+            if (fileResponse.Content.Headers.ContentDisposition != null)
+            {
+                if (!string.IsNullOrEmpty(fileResponse.Content.Headers.ContentDisposition.FileNameStar))
+                {
+                    fileName = fileResponse.Content.Headers.ContentDisposition.FileNameStar;
+                }
+                else if (!string.IsNullOrEmpty(fileResponse.Content.Headers.ContentDisposition.FileName))
+                {
+                    fileName = fileResponse.Content.Headers.ContentDisposition.FileName.Trim('"');
+                }
+            }
 
             string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
             foreach (char c in invalidChars)
@@ -604,7 +617,10 @@ namespace SimpleModManager
             }
 
             string targetPath = Path.Combine(modsDir, fileName);
-            File.WriteAllBytes(targetPath, fileBytes);
+            using var fileStream = await fileResponse.Content.ReadAsStreamAsync();
+            using var targetStream = File.Create(targetPath);
+            await fileStream.CopyToAsync(targetStream);
+
             downloadCount++;
           }
           catch { }
