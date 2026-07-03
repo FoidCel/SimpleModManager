@@ -96,10 +96,14 @@ namespace SimpleModManager
 
       _gameCheckTimer.Tick += (s, e) =>
       {
-        GameRunningBanner.Visibility = AutoPathFinder.IsGameRunning()
-          ? Visibility.Visible
-          : Visibility.Collapsed;
+        bool isRunning = AutoPathFinder.IsGameRunning();
+        GameRunningBanner.Visibility = isRunning ? Visibility.Visible : Visibility.Collapsed;
+        CloseGameBtn.Visibility = isRunning ? Visibility.Visible : Visibility.Collapsed;
       };
+
+      bool initialCheck = AutoPathFinder.IsGameRunning();
+      GameRunningBanner.Visibility = initialCheck ? Visibility.Visible : Visibility.Collapsed;
+      CloseGameBtn.Visibility = initialCheck ? Visibility.Visible : Visibility.Collapsed;
 
       _gameCheckTimer.Start();
     }
@@ -477,7 +481,9 @@ namespace SimpleModManager
             CopyDirectory(path, destDir);
             anyAdded = true;
           }
-          else if (File.Exists(path) && path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+          else if (File.Exists(path) && (path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ||
+                                         path.EndsWith(".rar", StringComparison.OrdinalIgnoreCase) ||
+                                         path.EndsWith(".7z", StringComparison.OrdinalIgnoreCase)))
           {
             string destFile = Path.Combine(modsDir, Path.GetFileName(path));
             File.Copy(path, destFile, true);
@@ -639,6 +645,58 @@ namespace SimpleModManager
       finally
       {
         SyncModsBtn.IsEnabled = true;
+      }
+    }
+
+    private void FixPakbypass_Click(object sender, RoutedEventArgs e)
+    {
+      string logsDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DeadByDaylight", "Saved", "Logs");
+
+      if (Directory.Exists(logsDir))
+      {
+        try
+        {
+          foreach (string file in Directory.GetFiles(logsDir))
+          {
+            try
+            {
+              File.Delete(file);
+            }
+            catch { }
+          }
+
+          foreach (string dir in Directory.GetDirectories(logsDir))
+          {
+            try
+            {
+              Directory.Delete(dir, true);
+            }
+            catch { }
+          }
+        }
+        catch { }
+      }
+
+      MessageBox.Show("fixed pakbypass if you still have issues open a ticket", "Fix Pakbypass", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void CloseGame_Click(object sender, RoutedEventArgs e)
+    {
+      var result = MessageBox.Show("u sure", "Close Game", MessageBoxButton.YesNo, MessageBoxImage.Question);
+      if (result == MessageBoxResult.Yes)
+      {
+        try
+        {
+          foreach (var process in System.Diagnostics.Process.GetProcessesByName("DeadByDaylight-Win64-Shipping"))
+          {
+            try
+            {
+              process.Kill();
+            }
+            catch { }
+          }
+        }
+        catch { }
       }
     }
 

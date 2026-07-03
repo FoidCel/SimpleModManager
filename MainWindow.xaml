@@ -170,6 +170,52 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="CleanScrollThumb" TargetType="Thumb">
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border x:Name="thumbBorder" CornerRadius="3" Background="{StaticResource BorderBrush}" Width="6" Margin="2,0"/>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="thumbBorder" Property="Background" Value="{StaticResource AccentPrimary}"/>
+                            </Trigger>
+                            <Trigger Property="IsDragging" Value="True">
+                                <Setter TargetName="thumbBorder" Property="Background" Value="{StaticResource AccentPrimaryHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ScrollBar">
+            <Setter Property="Stylus.IsPressAndHoldEnabled" Value="false"/>
+            <Setter Property="Stylus.IsFlicksEnabled" Value="false"/>
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="MinWidth" Value="10"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid x:Name="Bg" Background="Transparent" SnapsToDevicePixels="true">
+                            <Track x:Name="PART_Track" IsDirectionReversed="true" IsEnabled="{TemplateBinding IsEnabled}">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageUpCommand" Background="Transparent" BorderBrush="Transparent" Opacity="0" Focusable="false"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource CleanScrollThumb}"/>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageDownCommand" Background="Transparent" BorderBrush="Transparent" Opacity="0" Focusable="false"/>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Border Style="{StaticResource WindowBorder}" ClipToBounds="True">
@@ -224,7 +270,8 @@
                         </StackPanel>
 
                         <StackPanel Grid.Row="1">
-                            <Button Content="Open Mods Folder" Style="{StaticResource SecondaryButton}" Padding="10,8" FontSize="11" Click="OpenModsFolder_Click"/>
+                            <Button Content="Fix Pakbypass" Style="{StaticResource SecondaryButton}" Padding="10,8" Margin="0,0,0,8" Click="FixPakbypass_Click" FontSize="11"/>
+                            <Button Content="Open Mods Folder" Style="{StaticResource SecondaryButton}" Padding="10,8" Click="OpenModsFolder_Click" FontSize="11"/>
                             <Button Content="Change Platform" Style="{StaticResource SecondaryButton}" Padding="10,8" Margin="0,8,0,0" Click="ChangePlatform_Click" FontSize="11"/>
                         </StackPanel>
                     </Grid>
@@ -258,6 +305,12 @@
                                     Click="TurnOffAll_Click" ToolTip="Disable all active mods"
                                     Padding="14,0" Margin="0,0,8,0" FontSize="11" FontWeight="SemiBold">
                                 Turn Off All
+                            </Button>
+                            <Button x:Name="CloseGameBtn" Style="{StaticResource SecondaryButton}" Height="36" DockPanel.Dock="Right"
+                                    Click="CloseGame_Click" ToolTip="Close the game"
+                                    Padding="14,0" Margin="0,0,8,0" FontSize="11" FontWeight="SemiBold"
+                                    Visibility="Collapsed">
+                                Close Game
                             </Button>
                             <TextBlock Text="Available Mods" Foreground="White" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
                         </DockPanel>
