@@ -44,7 +44,7 @@ namespace SimpleModManager
 
   public partial class MainWindow : Window
   {
-    private const string CurrentVersion = "v3";
+    private const string CurrentVersion = "v4";
 
     private ObservableCollection<PakMods> _modsList = new();
     private AppConfig _config = new();
