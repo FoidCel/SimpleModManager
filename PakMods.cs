@@ -72,6 +72,26 @@ namespace SimpleModManager
             ? System.Windows.Visibility.Collapsed
             : System.Windows.Visibility.Visible;
 
+        private bool _isConfirmingDelete;
+
+        public bool IsConfirmingDelete
+        {
+            get => _isConfirmingDelete;
+            set
+            {
+                if (_isConfirmingDelete != value)
+                {
+                    _isConfirmingDelete = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(DeleteOverlayVisibility));
+                }
+            }
+        }
+
+        public System.Windows.Visibility DeleteOverlayVisibility => IsConfirmingDelete
+            ? System.Windows.Visibility.Visible
+            : System.Windows.Visibility.Collapsed;
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)

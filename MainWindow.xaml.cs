@@ -37,10 +37,14 @@ namespace SimpleModManager
     public string LicenseKey { get; set; } = "";
     public double WindowOpacity { get; set; } = 0.84;
     public List<string> EnabledMods { get; set; } = new();
+    public string AccentColor { get; set; } = "#C7245D";
+    public string AccentColorHover { get; set; } = "#D93C72";
+    public string AccentForeground { get; set; } = "#FFFFFF";
   }
 
   public partial class MainWindow : Window
   {
+    private const string CurrentVersion = "v3";
 
     private ObservableCollection<PakMods> _modsList = new();
     private AppConfig _config = new();
@@ -76,6 +80,7 @@ namespace SimpleModManager
 
       OpacitySlider.Value = sliderVal;
       ApplyWindowOpacity(_config.WindowOpacity);
+      ApplyAccentColors(_config.AccentColor, _config.AccentColorHover, _config.AccentForeground);
 
       if (string.IsNullOrEmpty(_config.SelectedPlatform) || string.IsNullOrEmpty(_config.DbdPaksPath))
       {
@@ -88,6 +93,7 @@ namespace SimpleModManager
       }
 
       StartGameRunningCheck();
+      CheckForUpdatesAsync();
     }
 
     private void StartGameRunningCheck()
@@ -698,6 +704,123 @@ namespace SimpleModManager
         }
         catch { }
       }
+    }
+
+    private void ApplyAccentColors(string mainHex, string hoverHex, string foreHex)
+    {
+      try
+      {
+        var mainColor = (Color)ColorConverter.ConvertFromString(mainHex);
+        var hoverColor = (Color)ColorConverter.ConvertFromString(hoverHex);
+        var foreColor = (Color)ColorConverter.ConvertFromString(foreHex);
+
+        Resources["AccentPrimary"] = new SolidColorBrush(mainColor);
+        Resources["AccentPrimaryHover"] = new SolidColorBrush(hoverColor);
+        Resources["AccentForeground"] = new SolidColorBrush(foreColor);
+      }
+      catch { }
+    }
+
+    private void AccentColor_Click(object sender, MouseButtonEventArgs e)
+    {
+      if (sender is not Border border || border.Tag is not string tag) return;
+
+      var parts = tag.Split('|');
+      if (parts.Length < 3) return;
+
+      _config.AccentColor = parts[0];
+      _config.AccentColorHover = parts[1];
+      _config.AccentForeground = parts[2];
+      SaveConfiguration();
+
+      ApplyAccentColors(_config.AccentColor, _config.AccentColorHover, _config.AccentForeground);
+    }
+
+    private void ModCard_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+      if (sender is Border border && border.DataContext is PakMods mod)
+      {
+        mod.IsConfirmingDelete = true;
+      }
+    }
+
+    private void CancelDelete_Click(object sender, RoutedEventArgs e)
+    {
+      if (sender is Button button && button.DataContext is PakMods mod)
+      {
+        mod.IsConfirmingDelete = false;
+      }
+    }
+
+    private void ConfirmDelete_Click(object sender, RoutedEventArgs e)
+    {
+      if (sender is Button button && button.DataContext is PakMods mod)
+      {
+        if (mod.IsActive)
+        {
+          AutoPathFinder.RevokeModFiles(mod, _config.DbdPaksPath, _config.SelectedPlatform);
+          _config.EnabledMods.Remove(mod.PakName);
+          SaveConfiguration();
+        }
+
+        try
+        {
+          if (Directory.Exists(mod.LocationPath))
+          {
+            Directory.Delete(mod.LocationPath, true);
+          }
+          else if (File.Exists(mod.LocationPath))
+          {
+            File.Delete(mod.LocationPath);
+          }
+        }
+        catch (Exception ex)
+        {
+          MessageBox.Show("Failed to delete mod file: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+          mod.IsConfirmingDelete = false;
+          return;
+        }
+
+        _modsList.Remove(mod);
+        UpdateConflictStates();
+      }
+    }
+
+    private async void CheckForUpdatesAsync()
+    {
+      try
+      {
+        var request = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/repos/FoidCel/SimpleModManager/releases/latest");
+        request.Headers.UserAgent.ParseAdd("SimpleModManagerApp");
+        var response = await _httpClient.SendAsync(request);
+        if (response.IsSuccessStatusCode)
+        {
+          var json = await response.Content.ReadAsStringAsync();
+          var match = System.Text.RegularExpressions.Regex.Match(json, @"""tag_name""\s*:\s*""([^""]+)""");
+          if (match.Success)
+          {
+            string latestTag = match.Groups[1].Value;
+            if (latestTag != CurrentVersion)
+            {
+              UpdateOverlay.Visibility = Visibility.Visible;
+            }
+          }
+        }
+      }
+      catch { }
+    }
+
+    private void DownloadUpdate_Click(object sender, RoutedEventArgs e)
+    {
+      try
+      {
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+          FileName = "https://github.com/FoidCel/SimpleModManager/releases/latest",
+          UseShellExecute = true
+        });
+      }
+      catch { }
     }
 
   }
