@@ -1,6 +1,6 @@
 # Simple Mod Manager
 
-An **unbranded**, modern, open-source tool to manage `.pak` files for **Dead By Daylight**, featuring built-in synchronization with the **Isolumia** Mod Hub.
+An **unbranded**, modern, open source tool to manage `.pak` files for **Dead By Daylight**, featuring built in synchronization with the **Isolumia** Mod Hub.
 
 ##  Features
 - **100% Open Source:** Fully transparent and customizable.
@@ -11,3 +11,6 @@ An **unbranded**, modern, open-source tool to manage `.pak` files for **Dead By 
 To run the executable or compile the source code, you will need:
 - [.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0)
 - Any C# IDE (like Visual Studio or Rider) if you wish to edit the source code.
+
+## Free Pak Bypass
+https://isolumia.com/pakbypass
